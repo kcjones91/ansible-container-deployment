@@ -1,0 +1,51 @@
+[Unit]
+Description={{ item.quadlet.unit_description | default(item.name + ' Container') }}
+{% if item.quadlet.unit_after is defined %}
+After={{ item.quadlet.unit_after | join(' ') }}
+{% endif %}
+{% if item.quadlet.unit_wants is defined %}
+Wants={{ item.quadlet.unit_wants | join(' ') }}
+{% endif %}
+
+[Container]
+Image={{ item.image }}
+ContainerName={{ item.name }}
+{% if item.ports is defined %}
+{% for port in item.ports %}
+PublishPort={{ port }}
+{% endfor %}
+{% endif %}
+{% if item.volumes is defined %}
+{% for volume in item.volumes %}
+Volume={{ volume }}
+{% endfor %}
+{% endif %}
+{% if item.networks is defined %}
+{% for network in item.networks %}
+Network={{ network }}
+{% endfor %}
+{% endif %}
+{% if item.environment is defined %}
+{% for key, value in item.environment.items() %}
+Environment={{ key }}={{ value }}
+{% endfor %}
+{% endif %}
+{% if item.devices is defined %}
+{% for device in item.devices %}
+Device={{ device }}
+{% endfor %}
+{% endif %}
+{% if item.security_opts is defined %}
+{% for opt in item.security_opts %}
+{% if 'label=disable' in opt %}
+SecurityLabelDisable=true
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[Service]
+Restart={{ item.restart_policy | default('always') }}
+TimeoutStartSec={{ item.quadlet.service_timeout | default(900) }}
+
+[Install]
+WantedBy={{ item.quadlet.install_wanted_by | default('default.target') }}

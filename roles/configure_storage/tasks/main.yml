@@ -1,0 +1,35 @@
+# roles/configure_storage/tasks/main.yml
+
+- name: Ensure per-application directories exist under each env
+  ansible.builtin.file:
+    path: "{{ base_root }}/{{ item.0.name }}/{{ item.1 }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ storage_envs | product(applications) | list }}"
+  when: applications | length > 0
+  become: true
+
+- name: Create logical volumes
+  community.general.lvol:
+    vg: "{{ storage_vg }}"
+    lv: "lv_{{ company_name }}_{{ item.name }}"
+    size: "{{ item.size }}"
+    shrink: no
+  loop: "{{ storage_envs }}"
+  become: true
+
+- name: Create filesystem if missing
+  community.general.filesystem:
+    fstype: "{{ storage_fstype }}"
+    dev: "/dev/{{ storage_vg }}/lv_{{ company_name }}_{{ item.name }}"
+  loop: "{{ storage_envs }}"
+  become: true
+
+- name: Mount filesystems
+  ansible.posix.mount:
+    path: "{{ base_root }}/{{ item.name }}"
+    src: "/dev/{{ storage_vg }}/lv_{{ company_name }}_{{ item.name }}"
+    fstype: "{{ storage_fstype }}"
+    state: mounted
+  loop: "{{ storage_envs }}"
+  become: true

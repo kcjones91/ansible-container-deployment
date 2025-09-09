@@ -1,0 +1,41 @@
+# Container management method
+
+# Image management wip
+
+# Default container runtime settings
+container_restart_policy: "always"
+container_security_opts: []
+container_devices: []
+container_capabilities: []
+
+# Container definitions follows defining containers for the module. Refer to docs
+containers: []
+# Example structure:
+# containers:
+#   - name: "example-app"
+#     image: "nginx:latest"
+#     state: "started"
+#     restart_policy: "always"
+#     ports:
+#       - "8080:80"
+#     volumes:
+#       - "/host/path:/container/path:Z"
+#     networks:
+#       - "app-network"
+#     environment:
+#       ENV_VAR: "value"
+#     devices:
+#       - "nvidia.com/gpu=all"
+#     security_opts:
+#       - "label=disable"
+#     depends_on: []
+
+# Directory creation - This will be it's own role for selinux compliance
+directories_to_create: []
+# Example:
+# create_directories:
+#   - path: "/opt/app/data"
+#     owner: "1000"
+#     group: "1000"
+#     mode: "0755"
+

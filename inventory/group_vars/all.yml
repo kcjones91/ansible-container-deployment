@@ -1,0 +1,4 @@
+# Base vars for all deployments
+deployment_root: /opt
+storage_vg: vg_data
+storage_fstype: xfs

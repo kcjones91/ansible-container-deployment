@@ -1,0 +1,21 @@
+---
+# tasks file for roles/configure_selinux
+- name: Ensure SELinux packages are installed
+  ansible.builtin.package:
+    name: {{ selinux_packages }}
+    state: present
+
+- name: Enable containers to use host devices with persistence
+  ansible.posix.seboolean:
+    name: container_use_devices
+    state: true
+    persistent: true
+
+- name: Show current SELinux mode
+  ansible.builtin.command: getenforce
+  register: se_status
+  changed_when: false
+
+- name: Debug SELinux status
+  ansible.builtin.debug:
+    msg: "SELinux is currently: {{ se_status.stdout }}"

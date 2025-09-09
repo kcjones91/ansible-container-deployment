@@ -1,0 +1,29 @@
+galaxy_info:
+  author: Kyle Jones
+  description: Deploy OpenWebUI and Ollama with Podman
+  company: Codegig
+  license: license (GPL-2.0-or-later, MIT, etc)
+  min_ansible_version: '2.9'
+  platforms:
+    - name: EL
+      versions:
+        - '8'
+        - '9'
+    - name: Fedora
+      versions:
+        - '36'
+        - '37'
+        - '38'
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - containers
+    - podman
+    - ollama
+    - openwebui
+    - ai
+    - llm
+
+dependencies: []

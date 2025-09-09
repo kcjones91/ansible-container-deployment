@@ -1,0 +1,9 @@
+---
+- name: Deploy Podman containers
+  hosts: all
+  become: true
+  gather_facts: true
+  
+  roles:
+    - role: configure_storage
+    - role: container_deployment

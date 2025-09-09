@@ -1,0 +1,60 @@
+# host_vars/dev.yml
+---
+# Container management settings
+pull_images: true
+container_restart_policy: "on-failure"
+
+
+# Container definitions
+containers:
+  - name: "ollama-prod"
+    image: "docker.io/ollama/ollama:latest"
+    state: "started"
+    ports:
+      - "11434:11434"
+    volumes:
+      - "{{ base_root }}/prod/ollama:/root/.ollama:Z"
+    networks:
+      - "openwebui-network-prod"
+    devices:
+      - "nvidia.com/gpu=all"
+    security_opts:
+      - "label=disable"
+    environment:
+      OLLAMA_SCHED_SPREAD: "true"        # Force GPU spreading
+      OLLAMA_MAX_LOADED_MODELS: "1"      # Only one large model at a time (Still experimenting here)     
+      OLLAMA_NUM_PARALLEL: "1"           # Single request
+      OLLAMA_GPU_OVERHEAD: "2147483648"  # Reserve 2GB per GPU for system
+      # R1 https://blog.peddals.com/en/ollama-vram-fine-tune-with-kv-cache/
+      # R2 https://atlassc.net/2025/01/15/configuring-your-ollama-server
+      OLLAMA_FLASH_ATTENTION: "true"    # Faster attention computation R1
+      OLLAMA_KV_CACHE_TYPE: "f16"       # Optimize memory usage R1
+      #OLLAMA_KEEP_ALIVE: "10m"          # Keep model loaded longer R2
+      #CUDA_VISIBLE_DEVICES: "0,1"       # Explicitly use both GPUs
+    # Quadlet-specific options - only used when state=quadlet
+    quadlet_options:
+      - "AutoUpdate=registry"
+      - "Pull=newer"
+
+  - name: "openwebui-prod"
+    image: "ghcr.io/open-webui/open-webui:main"
+    state: "started"  
+    ports:
+      - "4000:4000"
+    volumes:
+      - "{{ base_root }}/prod/openwebui:/app/backend/data:Z"
+    networks: 
+      - "openwebui-network-prod"
+    environment:
+      PORT: "4000"
+      WEBUI_URL: "http://localhost:4000"
+      OLLAMA_BASE_URL: "http://ollama-prod:11434"
+    # Quadlet dependency handling
+    quadlet_options:
+      - "AutoUpdate=registry"
+      - |
+        [Unit]
+        After=ollama-dev.service
+        Requires=ollama-dev.service
+        [Install]
+        WantedBy=default.target

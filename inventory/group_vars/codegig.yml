@@ -1,0 +1,12 @@
+# Group vars for codegig
+company_name: codegig
+base_root: "{{deployment_root}}/{{ company_name }}"
+
+# Storage parameters
+storage_envs:
+  - { name: dev,  size: 250g } # creates /opt/codegig/dev
+  - { name: prod, size: 500g }   # creates /opt/codegig/prod
+
+applications:
+  - ollama
+  - openwebui

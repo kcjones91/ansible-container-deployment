@@ -1,0 +1,54 @@
+# host_vars/dev.yml
+---
+# Container management settings
+pull_images: true
+container_restart_policy: "on-failure"
+
+# Container definitions
+containers:
+  - name: "ollama-dev"
+    image: "docker.io/ollama/ollama:latest"
+    state: "started"
+    ports:
+      - "21434:11434"
+    volumes:
+      - "{{ base_root }}/dev/ollama:/root/.ollama:Z"
+    networks:
+      - "openwebui-network-dev"
+    devices:
+      - "nvidia.com/gpu=all"
+    security_opts:
+      - "label=disable"
+    environment:
+      OLLAMA_SCHED_SPREAD: "true"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_GPU_OVERHEAD: "2147483648"
+      OLLAMA_FLASH_ATTENTION: "true"
+      OLLAMA_KV_CACHE_TYPE: "f16"
+    # Quadlet-specific options - only used when state=quadlet
+    quadlet_options:
+      - "AutoUpdate=registry"
+      - "Pull=newer"
+
+  - name: "openwebui-dev"
+    image: "ghcr.io/open-webui/open-webui:main"
+    state: "started"  
+    ports:
+      - "4001:4000"
+    volumes:
+      - "{{ base_root }}/dev/openwebui:/app/backend/data:Z"
+    networks: 
+      - "openwebui-network-dev"
+    environment:
+      PORT: "4000"
+      WEBUI_URL: "http://localhost:4001"
+      OLLAMA_BASE_URL: "http://ollama-dev:11434"
+    # Quadlet dependency handling
+    quadlet_options:
+      - "AutoUpdate=registry"
+      - |
+        [Unit]
+        After=ollama-dev.service
+        Requires=ollama-dev.service
+        [Install]
+        WantedBy=default.target

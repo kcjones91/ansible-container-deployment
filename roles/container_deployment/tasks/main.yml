@@ -1,0 +1,90 @@
+---
+- name: Pull container images
+  containers.podman.podman_image:
+    name: "{{ item.image }}"
+    pull: true
+  loop: "{{ containers }}"
+  tags:
+    - images
+
+- name: Create container networks
+  containers.podman.podman_network:
+    name: "{{ item.networks[0] }}"
+    state: present
+  loop: "{{ containers }}"
+  tags:
+    - networks
+
+- name: Deploy containers
+  containers.podman.podman_container:
+    name: "{{ item.name }}"
+    image: "{{ item.image }}"
+    state: "{{ item.state | default('started', true) }}"
+    # Standard container parameters - always present
+    ports: "{{ item.ports | default([]) }}"
+    volumes: "{{ item.volumes | default([]) }}"
+    network: "{{ item.networks | default([]) }}"
+    env: "{{ item.environment | default({}) }}"
+    device: "{{ item.devices | default([]) }}"
+    security_opt: "{{ item.security_opts | default([]) }}"
+    restart_policy: "{{ item.restart_policy | default(container_restart_policy) }}"
+    # Quadlet-specific parameters - only when state is quadlet
+    quadlet_dir: "{{ item.quadlet_dir | default('/etc/containers/systemd', true) if item.state == 'quadlet' else omit }}"
+    quadlet_filename: "{{ item.quadlet_filename | default(item.name) if item.state == 'quadlet' else omit }}"
+    quadlet_file_mode: "{{ item.quadlet_file_mode | default('0644', true) if item.state == 'quadlet' else omit }}"
+    quadlet_options: "{{ item.quadlet_options | default([]) if item.state == 'quadlet' else omit }}"
+  loop: "{{ containers }}"
+  register: container_results
+  tags:
+    - containers
+
+- name: Wait for containers to be ready
+  ansible.builtin.wait_for:
+    port: "{{ item.ports[0].split(':')[0] }}"
+    delay: 10
+    timeout: 120
+  loop: "{{ containers }}"
+  when:
+    - item.state | default('started') == 'started'
+    - item.ports is defined
+  tags: 
+   - health_check
+
+- name: Verify container health endpoints
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ item.ports[0].split(':')[0] }}"
+    method: GET
+    status_code: 200
+  loop: "{{ containers }}"
+  when:
+    - item.state | default('started') == 'started'
+    - item.ports is defined
+  delegate_to: localhost
+  tags: 
+    - verification
+
+- name: Enable Quadlet services
+  ansible.builtin.meta: flush_handlers
+
+- name: Start Quadlet services
+  ansible.builtin.systemd:
+    name: "{{ item.name }}.service"
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true
+  loop: "{{ containers }}"
+  when: item.state == "quadlet"
+  notify: quadlet_apply
+  tags:
+    - quadlet
+
+- name: Display container access information
+  ansible.builtin.debug:
+    msg: "{{ item.name }} is accessible at: http://{{ ansible_default_ipv4.address }}:{{ item.ports[0].split(':')[0] }}"
+  loop: "{{ containers }}"
+  when: 
+    - item.ports is defined
+    - item.ports | length > 0
+  tags:
+    - info

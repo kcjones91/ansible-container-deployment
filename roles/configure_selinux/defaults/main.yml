@@ -1,0 +1,6 @@
+---
+# defaults file for roles/configure_selinux
+selinux_packages_rhel:
+  - policycoreutils-python-utils
+  - libselinux-utils
+  - container-selinux 

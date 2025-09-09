@@ -1,0 +1,26 @@
+---
+- name: reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    scope: system
+  become: true
+  listen: "quadlet_apply"
+
+- name: requadlet_apply
+  ansible.builtin.systemd_service:
+    name: "{{ item.name }}.service"
+    state: restarted
+    scope: system
+  become: true
+  loop: "{{ containers }}"
+  listen: "quadlet_apply"
+
+- name: enable quadlet services
+  ansible.builtin.systemd_service:
+    name: "{{ item.name }}.service"
+    enabled: true
+    state: started
+    scope: system
+  become: true
+  loop: "{{ containers }}"
+  listen: "quadlet_apply"
